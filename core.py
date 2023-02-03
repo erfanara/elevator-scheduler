@@ -77,9 +77,15 @@ class Elevator:
 
     def _update_costs(self):
         # TODO: starvation
+        SE = 1
+        SI = 0.5
         for i in range(len(self.pq)):
             self.pq[i][0] = self.costFunc(self.pq[i][1])
-
+            if self.pq[i][1].type == ReqType.INTERNAL:
+                self.pq[i][0] -= int(self.pq[i][1].dst_arrival * SI)
+            else:
+                self.pq[i][0] -= int(self.pq[i][1].src_arrival * SE)
+                
     def _scheduler(self):
         # target selection
         if self.t == None:
@@ -120,8 +126,13 @@ class Elevator:
 
     # TODO
     def costFunc(self, req: Request) -> int:
-        return 0
-
+        # Cost = |currentFloor - targetFloor| + DREWARD if direction != targetDirection
+        DREWARD = 5
+        cost = abs(self.currentFloor - req.target)
+        direct = Direction.UP if self.currentFloor < req.target else Direction.DOWN
+        if self.direction != direct and self.direction != Direction.IDLE:
+            cost += DREWARD
+        return cost
 
 
 # bara inke b kodom asansor pass bede
@@ -144,10 +155,25 @@ class Elevators:
             global_time+=1
 
     def submit(self, req: Request):
-        # TODO
-        self.elevators[0].submit(req)
+        #Select the lowest cost elevator
+        best = 0
+        cost = self.elevators[0].costFunc(req)
+        for i in range(1, len(self.elevators)):
+            c = self.elevators[i].costFunc(req)
+            if c < cost:
+                cost = c
+                best = i
+        self.elevators[best].submit(req)
 
-
+#        # select the elevator with the lowest cost sum
+#        sum = sum(self.elevators[0].pq)
+#        best = 0
+#        for i in range(1, len(self.elevators)):
+#            s = sum(self.elevators[i].pq)
+#            if s < sum:
+#                sum = s
+#                best = i
+#        self.elevators[best].submit(req)
 
 
 ######################################################################

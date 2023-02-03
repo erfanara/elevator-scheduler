@@ -82,10 +82,10 @@ class Elevator:
         for i in range(len(self.pq)):
             self.pq[i][0] = self.costFunc(self.pq[i][1])
             if self.pq[i][1].type == ReqType.INTERNAL:
-                self.pq[i][0] -= int(self.pq[i][1].dst_arrival * SI)
+                self.pq[i][0] -= int((global_time - self.pq[i][1].src_arrival) * SI)
             else:
-                self.pq[i][0] -= int(self.pq[i][1].src_arrival * SE)
-                
+                self.pq[i][0] -= int((global_time - self.pq[i][1].dst_arrival) * SE)
+
     def _scheduler(self):
         # target selection
         if self.t == None:

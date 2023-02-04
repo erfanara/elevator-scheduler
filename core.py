@@ -1,14 +1,72 @@
 
+import tkinter as tk
 import heapq
 from threading import Thread, Semaphore
 from time import sleep
 from enum import Enum
 from typing import Callable
 
-time_unit = 1
+TIME_UNIT = 1
+ELEVATORS = 3
+FLOORS = 10
 global_time = 0
 
+FLOOR_COLOR = "white"
+ELEVATOR_COLOR = "black"
+######################################################################
+# GUI
+window = tk.Tk()
+labels = []
 
+for i in range(FLOORS):
+    sublist = []
+    for j in range(ELEVATORS):
+        frame = tk.Frame(
+            master=window,
+            relief=tk.RAISED,
+            borderwidth=1,
+        )
+        frame.grid(row=i, column=j, padx=10, pady=0)
+        label = tk.Label(master=frame, width=6, height=3, bg=FLOOR_COLOR)
+        label.pack(padx=0, pady=0)
+        sublist.append(label)
+    labels.append(sublist)
+
+entries = []
+for i in range(2):
+    frame = tk.Frame(
+        master=window,
+        relief=tk.RAISED,
+        borderwidth=1,
+    )
+    frame.grid(row=FLOORS, column=i)
+    en = tk.Entry(master=frame, width=8)
+    en.pack()
+    entries.append(en)
+
+def submit_button():
+    src = int(entries[0].get()) - 1
+    dst = int(entries[1].get()) - 1
+    print(src,dst)
+    e.submit(Request(src, dst))
+
+
+frame = tk.Frame(
+    master=window,
+    relief=tk.RAISED,
+    borderwidth=1,
+)
+frame.grid(row=FLOORS, column=2)
+b = tk.Button(master=frame, command=submit_button)
+b.pack()
+
+
+def guiColorizeLabel(i, j, color):
+    labels[FLOORS-i-1][j].config(bg=color)
+
+
+######################################################################
+# CORE
 class Direction(Enum):
     UP = 2
     DOWN = 1
@@ -48,8 +106,6 @@ class Request:
     def __eq__(self, other):
         return self.target == other.target
 
-
-# TODO: FCFS
 class PriorityQ(list):
     def __init__(self):
         self.s = Semaphore(0)
@@ -142,20 +198,23 @@ class Elevators:
         for _ in range(num):
             self.elevators.append(Elevator())
 
-        Thread(target=self.runner).start()
+        self.runner()
+        # Thread(target=self.runner).start()
 
     def runner(self):
         global global_time
-        global time_unit
-        while True:
-            for e in self.elevators:
-                e._scheduler()
-            sleep(time_unit)
-            global_time += 1
-            # debug
-            for e in self.elevators:
-                print(e.currentFloor,end=", ")
-            print("")
+        global TIME_UNIT
+        for i in range(len(self.elevators)):
+            guiColorizeLabel(self.elevators[i].currentFloor, i, FLOOR_COLOR)
+            self.elevators[i]._scheduler()
+            guiColorizeLabel(self.elevators[i].currentFloor, i, ELEVATOR_COLOR)
+        global_time += 1
+        # debug
+        # for e in self.elevators:
+        #     print(e.currentFloor, end=", ")
+        # print("")
+
+        window.after(TIME_UNIT*1000, self.runner)
 
     def submit(self, req: Request):
         # Select the lowest cost elevator
@@ -179,12 +238,6 @@ class Elevators:
 #        self.elevators[best].submit(req)
 
 
-######################################################################
-
-
 if __name__ == "__main__":
-    e = Elevators(3)
-
-    while (True):
-        req = [int(x) for x in input().split()]  # external internal
-        e.submit(Request(req[0], req[1]))
+    e = Elevators(ELEVATORS)
+    window.mainloop()

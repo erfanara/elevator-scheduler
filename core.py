@@ -41,15 +41,19 @@ class Request:
 
     def __lt__(self, other):
         return self.target < other.target
+
     def __le__(self, other):
         return self.target <= other.target
+
     def __eq__(self, other):
         return self.target == other.target
 
 
 # TODO: FCFS
 class PriorityQ(list):
-    s = Semaphore(0)
+    def __init__(self):
+        self.s = Semaphore(0)
+        super().__init__()
 
     def put(self, item):
         self.s.release()
@@ -73,6 +77,10 @@ class Elevator:
         self.t = None
 
     def submit(self, req: Request):
+        for t in self.pq:
+            _, r = t
+            if req.src == r.src and req.dst == r.dst:
+                return
         self.pq.put([self.costFunc(req), req])
 
     def _update_costs(self):
@@ -82,23 +90,18 @@ class Elevator:
         for i in range(len(self.pq)):
             self.pq[i][0] = self.costFunc(self.pq[i][1])
             if self.pq[i][1].type == ReqType.INTERNAL:
-                self.pq[i][0] -= int((global_time - self.pq[i][1].src_arrival) * SI)
+                self.pq[i][0] -= int((global_time -
+                                     self.pq[i][1].src_arrival) * SI)
             else:
-                self.pq[i][0] -= int((global_time - self.pq[i][1].dst_arrival) * SE)
+                self.pq[i][0] -= int((global_time -
+                                     self.pq[i][1].dst_arrival) * SE)
 
     def _scheduler(self):
+        if len(self.pq) == 0:
+            return
+
         # target selection
-        if self.t == None:
-            self.t = self.pq.pop()
-            print(self.pq)
-        else:
-            # if there is better target, switch the target
-            if len(self.pq) != 0:
-                candid = self.pq.top()
-                # compare costs
-                if candid[0] < self.t[0]:
-                    self.pq.put(self.t)
-                    self.t = self.pq.pop()
+        self.t = self.pq.pop()
 
         cost, req = self.t
 
@@ -116,13 +119,9 @@ class Elevator:
             if req.type == ReqType.EXTERNAL:
                 req.convertToInternal()
                 self.pq.put([self.costFunc(req), req])
-            self.t = None
         else:
             # TODO
             self.pq.put([self.costFunc(req), req])
-
-        # debug
-        print(self.currentFloor)
 
     # TODO
     def costFunc(self, req: Request) -> int:
@@ -139,7 +138,7 @@ class Elevator:
 # TODO: singleton
 class Elevators:
     def __init__(self, num) -> None:
-        self.elevators = []
+        self.elevators: list[Elevator] = []
         for _ in range(num):
             self.elevators.append(Elevator())
 
@@ -152,10 +151,14 @@ class Elevators:
             for e in self.elevators:
                 e._scheduler()
             sleep(time_unit)
-            global_time+=1
+            global_time += 1
+            # debug
+            for e in self.elevators:
+                print(e.currentFloor,end=", ")
+            print("")
 
     def submit(self, req: Request):
-        #Select the lowest cost elevator
+        # Select the lowest cost elevator
         best = 0
         cost = self.elevators[0].costFunc(req)
         for i in range(1, len(self.elevators)):
@@ -180,10 +183,8 @@ class Elevators:
 
 
 if __name__ == "__main__":
-    e = Elevators(1)
+    e = Elevators(3)
 
     while (True):
         req = [int(x) for x in input().split()]  # external internal
         e.submit(Request(req[0], req[1]))
-
-        # print(e.elevators[0].pq)

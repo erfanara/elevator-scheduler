@@ -8,7 +8,7 @@ from typing import Callable
 
 TIME_UNIT = 1
 ELEVATORS = 3
-FLOORS = 10
+FLOORS = 15
 global_time = 0
 
 FLOOR_COLOR = "white"
@@ -44,11 +44,16 @@ for i in range(2):
     en.pack()
     entries.append(en)
 
+
 def submit_button():
     src = int(entries[0].get()) - 1
     dst = int(entries[1].get()) - 1
-    print(src,dst)
-    e.submit(Request(src, dst))
+    if (0 <= src <= FLOORS-1) and (0 <= dst <= FLOORS-1):
+        e.submit(Request(src, dst))
+
+
+def submit_event(event):
+    submit_button()
 
 
 frame = tk.Frame(
@@ -57,8 +62,9 @@ frame = tk.Frame(
     borderwidth=1,
 )
 frame.grid(row=FLOORS, column=2)
-b = tk.Button(master=frame, command=submit_button)
+b = tk.Button(master=frame, command=submit_button, text="REQ")
 b.pack()
+window.bind("<Return>", submit_event)
 
 
 def guiColorizeLabel(i, j, color):
@@ -105,6 +111,7 @@ class Request:
 
     def __eq__(self, other):
         return self.target == other.target
+
 
 class PriorityQ(list):
     def __init__(self):
